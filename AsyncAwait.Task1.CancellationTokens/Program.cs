@@ -8,11 +8,15 @@
 */
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AsyncAwait.Task1.CancellationTokens;
 
 internal class Program
 {
+    private static CancellationTokenSource _cts = new CancellationTokenSource();
+
     /// <summary>
     /// The Main method should not be changed at all.
     /// </summary>
@@ -48,14 +52,39 @@ internal class Program
 
     private static void CalculateSum(int n)
     {
-        // todo: make calculation asynchronous
-        var sum = Calculator.Calculate(n);
-        Console.WriteLine($"Sum for {n} = {sum}.");
-        Console.WriteLine();
-        Console.WriteLine("Enter N: ");
-        // todo: add code to process cancellation and uncomment this line    
-        // Console.WriteLine($"Sum for {n} cancelled...");
+        Task<long> sumTask;
 
-        Console.WriteLine($"The task for {n} started... Enter N to cancel the request:");
+        do
+        {
+            sumTask = Calculator.Calculate(n, _cts.Token);
+            Console.WriteLine($"\nThe task for {n} started...");
+
+            int newN = 0;
+            do
+            {
+                Console.Write("Enter N to cancel the request: ");
+                int.TryParse(Console.ReadLine(), out newN);
+            } while (newN <= 0 && !sumTask.IsCompleted);
+
+            if (!sumTask.IsCompleted)
+            {
+                Console.WriteLine($"\nSum for {n} cancelled...");
+                _cts.Cancel();
+
+                n = newN;
+            }
+
+        } while (!sumTask.IsCompleted);
+
+        if (sumTask.IsCompletedSuccessfully)
+        {
+            Console.WriteLine($"The sum for {n} = {sumTask.Result}");
+        }
+        else
+        {
+            Console.WriteLine($"There was an error while processing sum for {n}");
+        }
+
+        Console.WriteLine($"Enter N to start a new sum request:");
     }
 }
