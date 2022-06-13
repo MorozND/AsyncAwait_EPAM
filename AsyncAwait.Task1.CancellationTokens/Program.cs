@@ -15,8 +15,6 @@ namespace AsyncAwait.Task1.CancellationTokens;
 
 internal class Program
 {
-    private static CancellationTokenSource _cts = new CancellationTokenSource();
-
     /// <summary>
     /// The Main method should not be changed at all.
     /// </summary>
@@ -53,38 +51,53 @@ internal class Program
     private static void CalculateSum(int n)
     {
         Task<long> sumTask;
+        CancellationTokenSource cts = new CancellationTokenSource();
+
+        bool sumTaskCompleted = false;
 
         do
         {
-            sumTask = Calculator.Calculate(n, _cts.Token);
-            Console.WriteLine($"\nThe task for {n} started...");
+            sumTask = StartCalculation(n, cts);
 
-            int newN = 0;
+            int newN;
             do
             {
-                Console.Write("Enter N to cancel the request: ");
+                Console.Write("\nEnter N to cancel the request: ");
                 int.TryParse(Console.ReadLine(), out newN);
             } while (newN <= 0 && !sumTask.IsCompleted);
 
             if (!sumTask.IsCompleted)
             {
                 Console.WriteLine($"\nSum for {n} cancelled...");
-                _cts.Cancel();
+                cts.Cancel();
 
                 n = newN;
+                continue;
             }
 
-        } while (!sumTask.IsCompleted);
+            if (sumTask.IsCompletedSuccessfully)
+            {
+                Console.WriteLine($"\nThe previous sum for {n} has already completed. Sum = {sumTask.Result}");
+                sumTaskCompleted = true;
+            }
+            else
+            {
+                Console.WriteLine($"\nThere was an error while processing the sum for {n}");
+            }
 
-        if (sumTask.IsCompletedSuccessfully)
+        } while (!sumTaskCompleted);
+
+        Console.WriteLine($"\nEnter N to start a new sum request:");
+    }
+
+    private static Task<long> StartCalculation(int n, CancellationTokenSource cts)
+    {
+        if (cts.Token.IsCancellationRequested)
         {
-            Console.WriteLine($"The sum for {n} = {sumTask.Result}");
-        }
-        else
-        {
-            Console.WriteLine($"There was an error while processing sum for {n}");
+            cts = new CancellationTokenSource();
         }
 
-        Console.WriteLine($"Enter N to start a new sum request:");
+        Console.WriteLine($"\nThe task for {n} started...");
+        return Calculator.Calculate(n, cts.Token);
     }
 }
