@@ -8,6 +8,8 @@
 */
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AsyncAwait.Task1.CancellationTokens;
 
@@ -48,14 +50,54 @@ internal class Program
 
     private static void CalculateSum(int n)
     {
-        // todo: make calculation asynchronous
-        var sum = Calculator.Calculate(n);
-        Console.WriteLine($"Sum for {n} = {sum}.");
-        Console.WriteLine();
-        Console.WriteLine("Enter N: ");
-        // todo: add code to process cancellation and uncomment this line    
-        // Console.WriteLine($"Sum for {n} cancelled...");
+        Task<long> sumTask;
+        CancellationTokenSource cts = new CancellationTokenSource();
 
-        Console.WriteLine($"The task for {n} started... Enter N to cancel the request:");
+        bool sumTaskCompleted = false;
+
+        do
+        {
+            sumTask = StartCalculation(n, cts);
+
+            int newN;
+            do
+            {
+                Console.Write("\nEnter N to cancel the request: ");
+                int.TryParse(Console.ReadLine(), out newN);
+            } while (newN <= 0 && !sumTask.IsCompleted);
+
+            if (!sumTask.IsCompleted)
+            {
+                Console.WriteLine($"\nSum for {n} cancelled...");
+                cts.Cancel();
+
+                n = newN;
+                continue;
+            }
+
+            if (sumTask.IsCompletedSuccessfully)
+            {
+                Console.WriteLine($"\nThe previous sum for {n} has already completed. Sum = {sumTask.Result}");
+                sumTaskCompleted = true;
+            }
+            else
+            {
+                Console.WriteLine($"\nThere was an error while processing the sum for {n}");
+            }
+
+        } while (!sumTaskCompleted);
+
+        Console.WriteLine($"\nEnter N to start a new sum request:");
+    }
+
+    private static Task<long> StartCalculation(int n, CancellationTokenSource cts)
+    {
+        if (cts.Token.IsCancellationRequested)
+        {
+            cts = new CancellationTokenSource();
+        }
+
+        Console.WriteLine($"\nThe task for {n} started...");
+        return Calculator.Calculate(n, cts.Token);
     }
 }
