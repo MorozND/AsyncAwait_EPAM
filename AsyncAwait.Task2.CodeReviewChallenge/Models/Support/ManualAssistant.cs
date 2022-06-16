@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using CloudServices.Interfaces;
 
@@ -24,8 +23,7 @@ public class ManualAssistant : IAssistant
         }
         catch (HttpRequestException ex)
         {
-            return await Task.Run(async () =>
-                await Task.FromResult($"Failed to register assistance request. Please try later. {ex.Message}"));
+            return await Task.FromResult($"Failed to register assistance request. Please try later. {ex.Message}");
         }
     }
 }
