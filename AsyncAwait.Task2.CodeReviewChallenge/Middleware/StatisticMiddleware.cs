@@ -25,6 +25,8 @@ public class StatisticMiddleware
         await _statisticService.RegisterVisitAsync(path);
         await UpdateHeadersAsync();
 
+        await _next(context);
+
         async Task UpdateHeadersAsync()
         {
             var visitsCount = await _statisticService.GetVisitsCountAsync(path);
@@ -34,7 +36,5 @@ public class StatisticMiddleware
                 visitsCount.ToString()
             );
         }
-
-        await _next(context);
     }
 }
