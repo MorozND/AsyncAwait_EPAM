@@ -90,7 +90,7 @@ internal class Program
         Console.WriteLine($"\nEnter N to start a new sum request:");
     }
 
-    private static Task<long> StartCalculation(int n, CancellationTokenSource cts)
+    private static async Task<long> StartCalculation(int n, CancellationTokenSource cts)
     {
         if (cts.Token.IsCancellationRequested)
         {
@@ -98,6 +98,10 @@ internal class Program
         }
 
         Console.WriteLine($"\nThe task for {n} started...");
-        return Calculator.Calculate(n, cts.Token);
+        var result = await Calculator.Calculate(n, cts.Token);
+
+        Console.WriteLine($"\nSum for {n} has already completed. Sum = {result}");
+
+        return result;
     }
 }
